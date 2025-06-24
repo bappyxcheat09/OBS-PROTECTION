@@ -32,7 +32,7 @@ namespace SecureBanglaAuditBot
             _client.RoleDeleted += OnRoleDeleted;
             _client.UserJoined += OnUserJoined;
 
-            string token = Environment.GetEnvironmentVariable("MTM4NzA1MDA0MDU1NTQ3MTAwMA.GschJw.tx0KpN0c5P9fOPXi7AKH5CBwLgTCHE7RQb5DEo");
+            string token = Environment.GetEnvironmentVariable("BOT_TOKEN");
             if (string.IsNullOrEmpty(token))
             {
                 Console.WriteLine("❌ BOT_TOKEN environment variable not set.");
