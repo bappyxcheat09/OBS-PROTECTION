@@ -10,6 +10,9 @@ namespace SecureBanglaAuditBot
     {
         private DiscordSocketClient _client;
 
+        // এখানে তোমার Bot Token সোজাসুজি বসাও
+        private const string BotToken = "MTM4NzA1MDA0MDU1NTQ3MTAwMA.GschJw.tx0KpN0c5P9fOPXi7AKH5CBwLgTCHE7RQb5DEo";
+
         static void Main(string[] args)
             => new Program().MainAsync().GetAwaiter().GetResult();
 
@@ -18,10 +21,7 @@ namespace SecureBanglaAuditBot
             _client = new DiscordSocketClient(new DiscordSocketConfig
             {
                 LogLevel = LogSeverity.Info,
-                GatewayIntents = GatewayIntents.Guilds |
-                                 GatewayIntents.GuildMembers |
-                                 GatewayIntents.GuildMessages |
-                                 GatewayIntents.GuildMessageReactions
+                GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMembers | GatewayIntents.GuildMessages | GatewayIntents.GuildMessageReactions
             });
 
             _client.Log += Log;
@@ -32,15 +32,10 @@ namespace SecureBanglaAuditBot
             _client.RoleDeleted += OnRoleDeleted;
             _client.UserJoined += OnUserJoined;
 
-            string token = Environment.GetEnvironmentVariable("BOT_TOKEN");
-            if (string.IsNullOrEmpty(token))
-            {
-                Console.WriteLine("❌ BOT_TOKEN environment variable not set.");
-                return;
-            }
-
-            await _client.LoginAsync(TokenType.Bot, token);
+            // Token এখানেই সরাসরি ব্যবহার করো
+            await _client.LoginAsync(TokenType.Bot, BotToken);
             await _client.StartAsync();
+
             await Task.Delay(-1);
         }
 
@@ -50,27 +45,23 @@ namespace SecureBanglaAuditBot
             return Task.CompletedTask;
         }
 
-        private Task OnReady()
+        private async Task OnReady()
         {
             Console.WriteLine($"✅ Bot চালু হয়েছে: {_client.CurrentUser.Username}");
-            return Task.CompletedTask;
         }
 
-        private async Task SendEmbedToOwner(IGuild guild, string title, string description, Color color)
+        private async Task SendEmbedToOwner(SocketGuild guild, string title, string description, Color color)
         {
-            if (guild is SocketGuild socketGuild)
-            {
-                var owner = socketGuild.Owner;
-                var embed = new EmbedBuilder()
-                    .WithTitle($"🔔 {title}")
-                    .WithDescription(description)
-                    .WithColor(color)
-                    .WithFooter($"সার্ভার: {socketGuild.Name}")
-                    .WithCurrentTimestamp()
-                    .Build();
+            var owner = guild.Owner;
+            var embed = new EmbedBuilder()
+                .WithTitle($"🔔 {title}")
+                .WithDescription(description)
+                .WithColor(color)
+                .WithFooter($"সার্ভার: {guild.Name}")
+                .WithCurrentTimestamp()
+                .Build();
 
-                await owner.SendMessageAsync(embed: embed);
-            }
+            await owner.SendMessageAsync(embed: embed);
         }
 
         private async Task OnChannelCreated(SocketChannel channel)
@@ -119,14 +110,14 @@ namespace SecureBanglaAuditBot
             }
         }
 
-        // Nuke detection method
+        // Nuke detection (manual call or add event-based call)
         private async Task MonitorNuke(SocketGuild guild)
         {
             var logs = await guild.GetAuditLogsAsync(10).FlattenAsync();
             var nukeActions = logs.Where(a =>
                 a.Action == ActionType.ChannelDeleted ||
                 a.Action == ActionType.RoleDeleted ||
-                a.Action == ActionType.Kick).ToList();
+                a.Action == ActionType.MemberKicked).ToList();
 
             if (nukeActions.Count >= 5)
             {
