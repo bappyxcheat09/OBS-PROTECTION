@@ -56,18 +56,21 @@ namespace SecureBanglaAuditBot
             return Task.CompletedTask;
         }
 
-        private async Task SendEmbedToOwner(SocketGuild guild, string title, string description, Color color)
+        private async Task SendEmbedToOwner(IGuild guild, string title, string description, Color color)
         {
-            var owner = guild.Owner;
-            var embed = new EmbedBuilder()
-                .WithTitle($"🔔 {title}")
-                .WithDescription(description)
-                .WithColor(color)
-                .WithFooter($"সার্ভার: {guild.Name}")
-                .WithCurrentTimestamp()
-                .Build();
+            if (guild is SocketGuild socketGuild)
+            {
+                var owner = socketGuild.Owner;
+                var embed = new EmbedBuilder()
+                    .WithTitle($"🔔 {title}")
+                    .WithDescription(description)
+                    .WithColor(color)
+                    .WithFooter($"সার্ভার: {socketGuild.Name}")
+                    .WithCurrentTimestamp()
+                    .Build();
 
-            await owner.SendMessageAsync(embed: embed);
+                await owner.SendMessageAsync(embed: embed);
+            }
         }
 
         private async Task OnChannelCreated(SocketChannel channel)
@@ -101,7 +104,7 @@ namespace SecureBanglaAuditBot
             if (user.IsBot)
             {
                 var guild = user.Guild;
-                var logs = await guild.GetAuditLogsAsync(1, actionType: ActionType.BotAdd).FlattenAsync();
+                var logs = await guild.GetAuditLogsAsync(1, actionType: ActionType.BotAdded).FlattenAsync();
                 var entry = logs.FirstOrDefault();
 
                 if (entry != null && entry.User.Id != guild.OwnerId)
@@ -116,13 +119,14 @@ namespace SecureBanglaAuditBot
             }
         }
 
+        // Nuke detection method
         private async Task MonitorNuke(SocketGuild guild)
         {
             var logs = await guild.GetAuditLogsAsync(10).FlattenAsync();
             var nukeActions = logs.Where(a =>
-                a.Action == ActionType.ChannelDelete ||
-                a.Action == ActionType.RoleDelete ||
-                a.Action == ActionType.MemberKick).ToList();
+                a.Action == ActionType.ChannelDeleted ||
+                a.Action == ActionType.RoleDeleted ||
+                a.Action == ActionType.Kick).ToList();
 
             if (nukeActions.Count >= 5)
             {
