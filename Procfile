@@ -1,0 +1,1 @@
+command: dotnet run --project SecureBanglaAuditBot.csproj
